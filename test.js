@@ -11,6 +11,7 @@ async function waitElement({
     waitSeconds = 120,
     sleepInterval = 1000,
 }) {
+    console.log(`Starting ${message}`);
     const waitLoopCnt = waitSeconds * 1000 / sleepInterval;
     const errors = [];
     for (let i = 0; i < waitLoopCnt; i++) {
@@ -62,13 +63,29 @@ async function test({b1}) {
         }
     })
   
+    const waitStatements = () => driver.findElement(By.id('fsd-li-accounts')).click();
+    const saveScreenshoot = async () => {
+        const image = await driver.takeScreenshot();
+        fs.writeFile('out.png', image, 'base64', function (err) {
+            if (err) console.log(err);
+        });
+    }
     await waitElement({
         message: 'Phone verificaton',
         action: async () => {
+            try {
+                await waitStatements();
+                console.log('phone verification already done');
+                return;
+            } catch (err) {
+                //console.log(`err find statements ${err.message}`);
+            }
+            
+            await saveScreenshoot();
             const ph1 = await driver.findElement(By.id('tlpvt-phone1'));
             console.log(`got ph1 ${ph1}`);
             await ph1.click();
-            await (await driver.findElement(By.id('btnARContinue'))).click();
+            await driver.findElement(By.id('btnARContinue')).click();
             await waitElement({
                 message: 'PhoneCode',
                 action: () => driver.findElement(By.id('tlpvt-acw-authnum')),
@@ -82,19 +99,28 @@ async function test({b1}) {
     });
     //await driver.sleep(1000);
 
+    await waitElement({
+        message: 'statements',
+        action: waitStatements,
+    })
+
     const title = await driver.getTitle();
     console.log('title is = ' + title);
-    if (title === 'webdriver - Google Search') {
-        console.log('Test passed');
-    } else {
-        console.log('Test failed');
-    }
-    await (await driver).sleep(5000);
-    const image = await driver.takeScreenshot();
-            
-    fs.writeFile('out.png', image, 'base64', function (err) {
-        if (err) console.log(err);
-    });
+    
+    await waitElement({
+        message: 'Accounts',
+        action: async () => {
+            const accounts = await driver.findElement(By.id('Traditional'));
+            console.log('got accounts');
+            const items = await accounts.findElements();
+            console.log(`items ${items.length}`);
+        }
+    })
+    //await driver.sleep(5000);
+    //const cookies = await driver.manage().getCookies();
+    //fs.writeFileSync('cookies.json', JSON.stringify());
+    
+    await saveScreenshoot();
             
     driver.quit();
 }
