@@ -18,6 +18,7 @@
   "homepage": "https://github.com/gzhangx/statementpuller#readme",
   "dependencies": {
     "bluebird": "^3.7.2",
+    "moment": "^2.29.1",
     "selenium-webdriver": "^4.0.0-alpha.7",
     "superagent": "^6.1.0"
   },
