@@ -1,5 +1,6 @@
 const creds = require('./creds.json');
 const moment = require('moment');
+const fs = require('fs');
 //const https = require('https');
 const { sleep, waitElement, driver, By, saveScreenshoot,
     pmap1,
@@ -8,6 +9,7 @@ const { sleep, waitElement, driver, By, saveScreenshoot,
     saveCookies,
     loadCookies,
 } = require('./lib/util');
+const { findSafariDriver } = require('selenium-webdriver/safari');
 
 async function test(creds) {
     
@@ -97,10 +99,11 @@ async function test(creds) {
         action: async message => {
             await saveScreenshoot();
             const statements = await driver.findElement(By.id(message));
-            const eles = await statements.findElements(By.css('tr'));
-            let dateStr = '';
-            let fileDesc = '';
+            const eles = await statements.findElements(By.css('tr'));            
             await pmap1(eles, async (ele, linePos) => {
+                let dateStr = '';
+                let fileDesc = '';
+                let href = '';
                 const tds = await ele.findElements(By.css('td'));
                 await pmap1(tds, async (td, ind) => {
                     const txt = await td.getAttribute('innerHTML'); 
@@ -110,13 +113,18 @@ async function test(creds) {
                         fileDesc = txt.replace(/&amp;/g, '_').replace(/ /g,'_');
                     }else  if (ind === 2) {
                         const aTag = await td.findElement(By.css('a'));
-                        const href = await aTag.getAttribute('href')
-                        //console.log(href);
-                        const fileName = `${dateStr}_${fileDesc}_${linePos}.pdf`;
-                        await getFileWithCookies(href, fileName);
+                        href = await aTag.getAttribute('href')
+                        //console.log(href);                        
                     } 
                     //https://personal.vanguard.com/us/StmtCnfmViewPDFImage?hsg=n&adobChk=n&year=2020&dateView=n&id=0&rid=897872640000283202010011601592210897875827790&raId=VAN2000&srcInd=RRD&viewing=s&dateCheck=false
                 });
+                if (href) {
+                    const fileName = `${dateStr}_${fileDesc}_${linePos}.pdf`;
+                    if (!fs.existsSync(fileName)) {
+                        console.log(`creating ${fileName}`);
+                        await getFileWithCookies(href, fileName);
+                    }
+                }
             });
         }
     })
