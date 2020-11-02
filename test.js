@@ -4,6 +4,7 @@ const driver = createFireFoxDriver();
 const Promise = require('bluebird');
 const creds = require('./creds.json');
 const readline = require('readline');
+const request = require('superagent');
 
 async function waitElement({
     message,
@@ -127,6 +128,7 @@ async function test({b1}) {
         action: async () => {
             const accounts = await driver.findElement(By.css('.AccountItems'));
             const accountItems = await accounts.findElements(By.css('.AccountItem'));
+            let DDA_details = null;
             await Promise.map(accountItems, async item => {
                 //const DDA_details = await item.findElement(By.name('DDA_details'));
                 //const mul = await findByMultiple('name', ['DDA_details', 'SDA_details'], item);
@@ -134,15 +136,53 @@ async function test({b1}) {
                 const accountNameA = await item.findElement(By.css('.AccountName a'));
                 //const name = await mul.itm.getAttribute('innerHTML');
                 const bal = await balanceValue.getAttribute('innerHTML');
-                const name = await accountNameA.getAttribute('innerHTML');
-                console.log(`${name} ${bal}`);
+                const text = await accountNameA.getAttribute('innerHTML');
+                const name = await accountNameA.getAttribute('name');
+                if (name === 'DDA_details') {
+                    DDA_details = accountNameA;
+                }
+                console.log(`${text} ${bal}`);
             });
             
+            await DDA_details.click();
             //console.log(await accounts.getAttribute('innerHTML'))            
 
         }
     })
-    //await driver.sleep(5000);
+
+    await waitElement({
+        message: 'download_transactions_top',
+        action: async () => {
+            const downForm = await driver.findElement(By.name('transactionDownloadForm'));
+            const action = await downForm.getAttribute('action');
+            console.log(action);
+            const cookiesStr = await driver.executeScript("return document.cookie");
+            const cks = await driver.manage().getCookies();
+            console.log(cookiesStr);
+            await saveScreenshoot();
+            const downFile = await request.post(action).type('form')
+                .set('Cookie', cks.map(c => `${c.name}=${c.value}`).join('; '))
+                .field('downloadTransactionType', 'transPeriod')
+                .field('selectedTransPeriod', 'Current+transactions')
+                .field('formatType', 'csv')
+                .field('searchBean.searchMoreOptionsPanelUsed', 'false');
+            console.log(downFile);
+            // const download = await driver.findElement(By.name('download_transactions_top')).click();
+            // const sel = await driver.findElement(By.id('select_filetype'));
+            // const selId = await sel.getAttribute('id');
+            // //await driver.selectByValue(sel, 'css');
+            // await driver.executeScript(`document.getElementById('${selId}').value='csv';`);
+
+            // const downloads = await driver.findElements(By.css('.submit-download'));
+            // await Promise.map(downloads, async (download, ind) => {
+            //     console.log('check downloaing ' + ind);
+            //     const text = await download.getAttribute('innerHTML');
+            //     console.log(text);
+            //     //download.click();
+            // });
+        }
+    })
+    await driver.sleep(5000);
     //const cookies = await driver.manage().getCookies();
     //fs.writeFileSync('cookies.json', JSON.stringify());
     
