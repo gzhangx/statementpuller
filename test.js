@@ -6,6 +6,21 @@ const creds = require('./creds.json');
 const readline = require('readline');
 const request = require('superagent');
 
+
+
+async function fileTest() {
+    const action = 'https://secure.bankofamerica.com/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587';
+    const cookiesStr = fs.readFileSync('outputData/cookie.txt').toString();
+    const downFile = await request.post(action)
+        .set('Cookie', cookiesStr)
+        .type('form')
+        .field('downloadTransactionType', 'transPeriod')
+        .field('selectedTransPeriod', 'Current transactions')
+        .field('formatType', 'csv')
+        .field('searchBean.searchMoreOptionsPanelUsed', 'false');
+    console.log(downFile.text);
+}
+//return fileTest();
 async function waitElement({
     message,
     action,
@@ -83,7 +98,7 @@ async function test({b1}) {
     const waitStatements = () => driver.findElement(By.id('fsd-li-accounts')).click();
     const saveScreenshoot = async () => {
         const image = await driver.takeScreenshot();
-        fs.writeFile('out.png', image, 'base64', function (err) {
+        fs.writeFile('outputData/out.png', image, 'base64', function (err) {
             if (err) console.log(err);
         });
     }
@@ -162,6 +177,7 @@ async function test({b1}) {
             await saveScreenshoot();
             const cookiesStr = cks.map(c => `${c.name}=${c.value}`).join('; ');
             console.log(cookiesStr);
+            fs.writeFileSync('outputData/cookie.txt', cookiesStr);
             const downFile = await request.post(action)
                 .set('Cookie', cookiesStr)
             .type('form')

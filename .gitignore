@@ -2,3 +2,4 @@ node_modules
 creds.json
 out.png
 .vscode
+outputData
