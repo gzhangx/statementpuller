@@ -9,7 +9,7 @@ const request = require('superagent');
 async function waitElement({
     message,
     action,
-    waitSeconds = 120,
+    waitSeconds = 60,
     sleepInterval = 1000,
 }) {
     console.log(`Starting ${message}`);
@@ -21,6 +21,7 @@ async function waitElement({
             return await action();
         } catch (err) {
             errors.push(err.message);
+            console.log(err.message);
             await driver.sleep(sleepInterval);
         }
     }
@@ -156,17 +157,19 @@ async function test({b1}) {
             const downForm = await driver.findElement(By.name('transactionDownloadForm'));
             const action = await downForm.getAttribute('action');
             console.log(action);
-            const cookiesStr = await driver.executeScript("return document.cookie");
-            const cks = await driver.manage().getCookies();
-            console.log(cookiesStr);
+            //const cookiesStr = await driver.executeScript("return document.cookie");
+            const cks = await driver.manage().getCookies();            
             await saveScreenshoot();
-            const downFile = await request.post(action).type('form')
-                .set('Cookie', cks.map(c => `${c.name}=${c.value}`).join('; '))
+            const cookiesStr = cks.map(c => `${c.name}=${c.value}`).join('; ');
+            console.log(cookiesStr);
+            const downFile = await request.post(action)
+                .set('Cookie', cookiesStr)
+            .type('form')
                 .field('downloadTransactionType', 'transPeriod')
                 .field('selectedTransPeriod', 'Current+transactions')
                 .field('formatType', 'csv')
                 .field('searchBean.searchMoreOptionsPanelUsed', 'false');
-            console.log(downFile);
+            console.log(downFile.text);
             // const download = await driver.findElement(By.name('download_transactions_top')).click();
             // const sel = await driver.findElement(By.id('select_filetype'));
             // const selId = await sel.getAttribute('id');
