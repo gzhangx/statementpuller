@@ -99,27 +99,27 @@ async function test(creds) {
         action: async message => {
             await saveScreenshoot();
             const statements = await driver.findElement(By.id(message));
-            const eles = await statements.findElements(By.css('tr'));            
+            const eles = await statements.findElements(By.css('tr'));
             await pmap1(eles, async (ele, linePos) => {
                 let dateStr = '';
                 let fileDesc = '';
                 let href = '';
                 const tds = await ele.findElements(By.css('td'));
                 await pmap1(tds, async (td, ind) => {
-                    const txt = await td.getAttribute('innerHTML'); 
+                    const txt = await td.getAttribute('innerHTML');
                     if (ind === 0) {
                         dateStr = moment(txt, 'MM/DD/YYYY').format('YYYYMMDD');
                     } else if (ind === 1) {
-                        fileDesc = txt.replace(/&amp;/g, '_').replace(/ /g,'_');
-                    }else  if (ind === 2) {
+                        fileDesc = txt.replace(/&amp;/g, '_').replace(/ /g, '_');
+                    } else if (ind === 2) {
                         const aTag = await td.findElement(By.css('a'));
                         href = await aTag.getAttribute('href')
                         //console.log(href);                        
-                    } 
+                    }
                     //https://personal.vanguard.com/us/StmtCnfmViewPDFImage?hsg=n&adobChk=n&year=2020&dateView=n&id=0&rid=897872640000283202010011601592210897875827790&raId=VAN2000&srcInd=RRD&viewing=s&dateCheck=false
                 });
                 if (href) {
-                    const fileName = `${dateStr}_${fileDesc}_${linePos}.pdf`;
+                    const fileName = `van/${dateStr}_${fileDesc}_${linePos}.pdf`;
                     if (!fs.existsSync(fileName)) {
                         console.log(`creating ${fileName}`);
                         await getFileWithCookies(href, fileName);
@@ -127,7 +127,8 @@ async function test(creds) {
                 }
             });
         }
-    })
+    });
+    console.log('done, sleeping');
     await sleep(1000);
     //const cookies = await driver.manage().getCookies();
     //fs.writeFileSync('cookies.json', JSON.stringify());
@@ -135,7 +136,9 @@ async function test(creds) {
     await saveScreenshoot();
 
     await saveCookies();
+    console.log('cookies saved');
     await driver.quit();
+    console.log('all done');
 }
 
 test(creds.van).catch(err => {
