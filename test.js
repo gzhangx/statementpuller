@@ -109,8 +109,8 @@ async function test({b1}) {
 
     await driver.get(creds.b1.url);
 
-    await driver.findElement(By.name(b1.pwdName)).sendKeys(b1.password);
-    await driver.findElement(By.id(b1.idName)).sendKeys(b1.userName);    
+    await driver.findElement(By.name('passcode1')).sendKeys(b1.password);
+    await driver.findElement(By.id('onlineId1')).sendKeys(b1.userName);    
 
     //await driver.sleep(1000);
     //await driver.findElement(By.name('q')).sendKeys(webdriver.Key.TAB);
@@ -120,7 +120,7 @@ async function test({b1}) {
         message: 'Waiting sign in button',
         //const readyState = await driver.executeScript("return document.readyState");        
         action: async ()=> {
-            const btn = await driver.findElement(By.id(b1.btnName));
+            const btn = await driver.findElement(By.id('signIn'));
             await btn.click();            
         }
     })
