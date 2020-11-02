@@ -8,49 +8,6 @@ const request = require('superagent');
 const https = require('https');
 
 
-async function fileTest() {
-    const action = 'https://secure.bankofamerica.com/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587';
-    const cookiesStr = fs.readFileSync('outputData/cookie.txt').toString();
-    const downFile = await request.post(action)
-        .set('Cookie', cookiesStr)
-        //.type('form')
-        .field('downloadTransactionType', 'transPeriod')
-        .field('selectedTransPeriod', 'Current transactions')
-        .field('formatType', 'csv')
-        .field('searchBean.searchMoreOptionsPanelUsed', 'false');
-    //console.log(downFile.text);
-
-    const data = 'downloadTransactionType=transPeriod&selectedTransPeriod=Current+transactions&formatType=csv&searchBean.searchMoreOptionsPanelUsed=false';
-    const options = {
-        hostname: 'secure.bankofamerica.com',
-        port: 443,
-        path: '/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': data.length,
-            'Cookie': cookiesStr,
-        }
-    }
-
-    const req = https.request(options, res => {
-        console.log(`statusCode: ${res.statusCode}`)
-
-        res.on('data', d => {
-            process.stdout.write(d)
-        })
-    })
-
-    req.on('error', error => {
-        console.error(error)
-    })
-
-    req.write(data);
-    req.end()
-
-}
-return fileTest();
-
 async function waitElement({
     message,
     action,
@@ -103,6 +60,49 @@ function readOneLine(prompt) {
             rl.close();
         });
     });
+}
+
+
+async function downloadFile(cookiesStr) {
+    const action = 'https://secure.bankofamerica.com/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587';
+    //const action = 'http://localhost:8090/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587';
+    const cookie = cookiesStr || fs.readFileSync('outputData/cookie.txt').toString();
+    const downFile = await request.post(action)
+        .set('Cookie', cookie)
+        .send('downloadTransactionType=transPeriod')
+        .send('selectedTransPeriod=Current transactions')
+        .send('formatType=csv')
+        .send('searchBean.searchMoreOptionsPanelUsed=false');
+    console.log(downFile.body.toString());
+
+    // const data = 'downloadTransactionType=transPeriod&selectedTransPeriod=Current+transactions&formatType=csv&searchBean.searchMoreOptionsPanelUsed=false';
+    // const options = {
+    //     hostname: 'secure.bankofamerica.com',
+    //     port: 443,
+    //     path: '/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587',
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/x-www-form-urlencoded',
+    //         'Content-Length': data.length,
+    //         'Cookie': cookiesStr,
+    //     }
+    // }
+
+    // const req = https.request(options, res => {
+    //     console.log(`statusCode: ${res.statusCode}`)
+
+    //     res.on('data', d => {
+    //         process.stdout.write(d)
+    //     })
+    // })
+
+    // req.on('error', error => {
+    //     console.error(error)
+    // })
+
+    // req.write(data);
+    // req.end()
+
 }
 
 async function test({b1}) {
@@ -176,6 +176,7 @@ async function test({b1}) {
             const accountItems = await accounts.findElements(By.css('.AccountItem'));
             let DDA_details = null;
             await Promise.map(accountItems, async item => {
+                await saveScreenshoot();
                 //const DDA_details = await item.findElement(By.name('DDA_details'));
                 //const mul = await findByMultiple('name', ['DDA_details', 'SDA_details'], item);
                 const balanceValue = await item.findElement(By.css('.balanceValue'));
@@ -188,6 +189,7 @@ async function test({b1}) {
                     DDA_details = accountNameA;
                 }
                 console.log(`${text} ${bal}`);
+                await saveScreenshoot();
             });
             
             await DDA_details.click();
@@ -199,23 +201,18 @@ async function test({b1}) {
     await waitElement({
         message: 'download_transactions_top',
         action: async () => {
+            await saveScreenshoot();
             const downForm = await driver.findElement(By.name('transactionDownloadForm'));
             const action = await downForm.getAttribute('action');
-            console.log(action);
+            //console.log(action);
             //const cookiesStr = await driver.executeScript("return document.cookie");
             const cks = await driver.manage().getCookies();            
             await saveScreenshoot();
             const cookiesStr = cks.map(c => `${c.name}=${c.value}`).join('; ');
-            console.log(cookiesStr);
+            //console.log(cookiesStr);
             fs.writeFileSync('outputData/cookie.txt', cookiesStr);
-            const downFile = await request.post(action)
-                .set('Cookie', cookiesStr)
-            .type('form')
-                .field('downloadTransactionType', 'transPeriod')
-                .field('selectedTransPeriod', 'Current+transactions')
-                .field('formatType', 'csv')
-                .field('searchBean.searchMoreOptionsPanelUsed', 'false');
-            console.log(downFile.text);
+            await downloadFile(cookiesStr);
+            await saveScreenshoot();
             // const download = await driver.findElement(By.name('download_transactions_top')).click();
             // const sel = await driver.findElement(By.id('select_filetype'));
             // const selId = await sel.getAttribute('id');
