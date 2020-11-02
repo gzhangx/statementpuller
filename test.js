@@ -5,7 +5,7 @@ const Promise = require('bluebird');
 const creds = require('./creds.json');
 const readline = require('readline');
 const request = require('superagent');
-
+const https = require('https');
 
 
 async function fileTest() {
@@ -13,14 +13,44 @@ async function fileTest() {
     const cookiesStr = fs.readFileSync('outputData/cookie.txt').toString();
     const downFile = await request.post(action)
         .set('Cookie', cookiesStr)
-        .type('form')
+        //.type('form')
         .field('downloadTransactionType', 'transPeriod')
         .field('selectedTransPeriod', 'Current transactions')
         .field('formatType', 'csv')
         .field('searchBean.searchMoreOptionsPanelUsed', 'false');
-    console.log(downFile.text);
+    //console.log(downFile.text);
+
+    const data = 'downloadTransactionType=transPeriod&selectedTransPeriod=Current+transactions&formatType=csv&searchBean.searchMoreOptionsPanelUsed=false';
+    const options = {
+        hostname: 'secure.bankofamerica.com',
+        port: 443,
+        path: '/myaccounts/details/deposit/download-transactions.go?adx=af796b85c5feaea3955032aaf1e8cfd2935a60895a44f1ef4f04246e728f9587',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': data.length,
+            'Cookie': cookiesStr,
+        }
+    }
+
+    const req = https.request(options, res => {
+        console.log(`statusCode: ${res.statusCode}`)
+
+        res.on('data', d => {
+            process.stdout.write(d)
+        })
+    })
+
+    req.on('error', error => {
+        console.error(error)
+    })
+
+    req.write(data);
+    req.end()
+
 }
-//return fileTest();
+return fileTest();
+
 async function waitElement({
     message,
     action,
