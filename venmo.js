@@ -21,27 +21,97 @@ async function test(creds) {
         //const readyState = await driver.executeScript("return document.readyState");        
         action: async () => {
             await driver.findElement(By.name('phoneEmailUsername')).sendKeys(creds.userName);
-            await driver.findElement(By.name('password')).sendKeys(creds.userName);     
+            await driver.findElement(By.name('password')).sendKeys(creds.password);     
         }
     });    
     
+    while (true) {
+        await waitElement({
+            message: 'Waiting sign in button',
+            //const readyState = await driver.executeScript("return document.readyState");        
+            action: async () => {
+                await sleep(2000);
+                const btn = await driver.findElement(By.css('.auth-button'));
+                await btn.click();
+                console.log('sign in clicked');
+                await sleep(2000);
+            }
+        });
+
+        try {
+            await driver.findElement(By.name('password'));
+            console.log('Still in sign on screen');
+            await sleep(1000);
+            await driver.findElement(By.name('password')).clear();
+            await driver.findElement(By.name('password')).sendKeys(creds.password);     
+            await saveScreenshoot();
+        } catch { 
+            break;
+        }
+    }
+
+    const CheckCode = async () => {
+        await sleep(1000);
+        await saveScreenshoot();
+        const sendCode = await driver.findElement(By.css('.mfa-button-code-prompt'));
+        await saveScreenshoot();
+        console.log('Need code');
+        await sleep(1000);
+        await sendCode.click();
+
+        await waitElement({
+            message: 'WaitSendCode',
+            waitSeconds: 5,
+            action: async () => {
+                const codeField = await driver.findElement(By.css('.auth-form-input'));
+                const code = await readOneLine('Please input code');
+                codeField.sendKeys(code);
+                let btn = await driver.findElement(By.css('.auth-button'));                
+                btn.click();
+                await sleep(1000);
+
+                const NoRemember = await driver.findElement(By.css('.mfa-button-do-not-remember'));
+                btn = await driver.findElement(By.css('.auth-button'));
+                btn.click();
+                await sleep(1000);
+            }
+        });
+        
+    }
     await waitElement({
-        message: 'Waiting sign in button',
-        //const readyState = await driver.executeScript("return document.readyState");        
+        message: 'close Notification',
+        waitSeconds: 60,
         action: async () => {
-            const btn = await driver.findElement(By.css('.ladda-button'));
-            await btn.click();
+            await sleep(1000);
+            await saveScreenshoot();
+            let good = false;
+            try {
+                await CheckCode();
+                good = true;
+            } catch(e) {
+                console.log('waiting for code step');
+            }
+            try {
+                const btn = await driver.findElement(By.id('balance_right_side'));
+                good = true;
+            } catch {
+                console.log('not login');
+            }
+            if (!good) throw 'bad';
+            return good;
         }
     });
 
     await waitElement({
-        message: 'close Notification',
+        message: 'Wait entrance',
         waitSeconds: 5,
         action: async () => {
             await saveScreenshoot();
-            const btn = await driver.findElement(By.id('balance_right_side'));
+            await sleep(1000);
+            const btn = await driver.findElement(By.id('balance_right_side'));            
         }
     });
+    saveCookies();
     saveScreenshoot();
     return;
 
