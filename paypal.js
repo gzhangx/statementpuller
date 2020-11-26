@@ -43,17 +43,20 @@ async function test(creds) {
     
 
     await waitElement({
-        message: 'close Notification',
+        message: 'Recapture',
         waitSeconds: 60,
         action: async () => {
             await sleep(1000);
             await saveScreenshoot();
             try {
                 const recap = await driver.findElement(By.id('recaptcha-anchor'));
-                recap.click();
+                console.log('found recapture');
+                await recap.click();
                 console.log('clicking recapture');
                 await sleep(1000);
-            } catch { }
+            } catch (e) {
+                console.log(e.message);
+            }
             await saveScreenshoot();
             await driver.findElement(By.css('.test_balance-tile-currency'));                
         }
@@ -80,11 +83,37 @@ async function test(creds) {
     console.log(`containers=${containers.length}`);
 
     await Promise.map(containers, async cont => {
-        const all = await cont.findElements(By.css('>*'));
-        const desc = await cont.findElements(By.css('transactionDescription'));
-        const div = await cont.findElements(By.css('div'));
-        const divspan = await cont.findElements(By.css('div span'));
-        console.log(`${all.length }desc=${desc.length} div=${div.length} ${divspan.length}`);
+        /*
+        const desc = await cont.findElements(By.css('.transactionDescription'));
+        while (true) {
+            try {
+                const line = await readOneLine('give me a line');
+                console.log(line);
+                const divs = await cont.findElements(By.css(line));
+                await Promise.map(divs, async (div,ind) => {
+                    const value = await div.getAttribute('innerHTML');
+                    console.log(ind + ' val=' + value);
+                }, { concurrency: 1 });                
+                
+            } catch (e) {
+                console.log(e.message)
+            }
+        }
+*/
+        const getInnerHtml = c=>c.getAttribute('innerHTML');
+        const getByCss = c => getInnerHtml(cont.findElement(By.css(c)));
+        const name = await getByCss('.counterparty-text');
+        const amountSignData = await cont.findElements(By.css('.transactionAmount span'));
+        const sign = await getInnerHtml(amountSignData[0]);
+        const amount = await getInnerHtml(amountSignData[1]);
+        const time = await getByCss('.relative-time');
+        let notes = '';
+        try {
+            notes = await getByCss('.notes-text');
+        } catch { }
+        const transactionType = await getByCss('.transactionType');
+        const formated = moment(time,'MMM D').format('YYYY-MM-DD')
+        console.log(`${transactionType} ${sign} ${amount} name=${name} notes=${notes} time=${time} ${formated}`);
     },{concurrency:1});
 
     await driver.quit();
