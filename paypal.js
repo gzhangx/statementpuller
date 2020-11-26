@@ -106,14 +106,19 @@ async function test(creds) {
         const amountSignData = await cont.findElements(By.css('.transactionAmount span'));
         const sign = await getInnerHtml(amountSignData[0]);
         const amount = await getInnerHtml(amountSignData[1]);
-        const time = await getByCss('.relative-time');
+        const MMMDD = await getByCss('.relative-time');
         let notes = '';
         try {
             notes = await getByCss('.notes-text');
         } catch { }
         const transactionType = await getByCss('.transactionType');
-        const formated = moment(time,'MMM D').format('YYYY-MM-DD')
-        console.log(`${transactionType} ${sign} ${amount} name=${name} notes=${notes} time=${time} ${formated}`);
+        const parsedDate = moment(MMMDD, 'MMM D');
+        if (parsedDate.isAfter(moment())) {
+            parsedDate.add(-11, 'years');            
+        }
+        const time = parsedDate.toDate();
+        const formatted = parsedDate.format('YYYY-MM-DD');
+        console.log(`${transactionType} ${sign} ${amount} name=${name} notes=${notes} time=${time} ${formatted}`);
     },{concurrency:1});
 
     await driver.quit();
