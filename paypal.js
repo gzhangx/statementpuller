@@ -127,6 +127,7 @@ async function test(creds) {
             name,
             notes,
             date: formatted,
+            source: 'paypal',
         }
     },{concurrency:1});
 
