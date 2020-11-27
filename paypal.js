@@ -82,7 +82,7 @@ async function test(creds) {
     const containers = await driver.findElements(By.css('.transactionDescriptionContainer'));
     console.log(`containers=${containers.length}`);
 
-    await Promise.map(containers, async cont => {
+    const paypalTrans = await Promise.map(containers, async cont => {
         /*
         const desc = await cont.findElements(By.css('.transactionDescription'));
         while (true) {
@@ -105,7 +105,8 @@ async function test(creds) {
         const name = await getByCss('.counterparty-text');
         const amountSignData = await cont.findElements(By.css('.transactionAmount span'));
         const sign = await getInnerHtml(amountSignData[0]);
-        const amount = await getInnerHtml(amountSignData[1]);
+        const amount = await getInnerHtml(amountSignData[sign==='-'?2:1]);
+
         const MMMDD = await getByCss('.relative-time');
         let notes = '';
         try {
@@ -118,11 +119,21 @@ async function test(creds) {
         }
         const time = parsedDate.toDate();
         const formatted = parsedDate.format('YYYY-MM-DD');
-        console.log(`${transactionType} ${sign} ${amount} name=${name} notes=${notes} time=${time} ${formatted}`);
+        console.log(`${transactionType} ${sign} ${amount} name=${name} notes=${notes} ${formatted}`);
+        return {
+            transactionType,
+            sign,
+            amount: sign + amount.replace(/[$]/, '').trim().replace(/,/g,''),
+            name,
+            notes,
+            date: formatted,
+        }
     },{concurrency:1});
 
     await driver.quit();
     console.log('all done');
+    console.log(paypalTrans);
+    fs.writeFileSync('./outputData/paypal.json', JSON.stringify(paypalTrans));
 }
 
 test(creds.paypal).catch(err => {
