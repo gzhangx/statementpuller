@@ -2,6 +2,7 @@ const creds = require('./creds.json');
 const moment = require('moment');
 const Promise = require('bluebird');
 const fs = require('fs');
+const submit = require('./lib/submit');
 //const https = require('https');
 const { sleep, waitElement, driver, By, saveScreenshoot,
     pmap1,
@@ -135,6 +136,7 @@ async function test(creds) {
     console.log('all done');
     console.log(paypalTrans);
     fs.writeFileSync('./outputData/paypal.json', JSON.stringify(paypalTrans));
+    await submit.submit(paypalTrans);
 }
 
 test(creds.paypal).catch(err => {
