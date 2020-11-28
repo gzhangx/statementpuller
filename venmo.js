@@ -16,38 +16,48 @@ async function test(creds) {
     await driver.get(creds.url);
     await loadCookies();
 
+    await sleep(1000);
+    await saveScreenshoot();
     await waitElement({
         message: 'Waiting page startup',
         //const readyState = await driver.executeScript("return document.readyState");        
         action: async () => {
-            await driver.findElement(By.name('phoneEmailUsername')).sendKeys(creds.userName);
+            const username = await driver.findElement(By.name('phoneEmailUsername'));
+            username.click();
+            await username.sendKeys(creds.userName);
             await driver.findElement(By.name('password')).sendKeys(creds.password);     
         }
-    });    
+    });
     
     while (true) {
         await waitElement({
             message: 'Waiting sign in button',
             //const readyState = await driver.executeScript("return document.readyState");        
             action: async () => {
-                await sleep(2000);
+                await sleep(3000);
+                await saveScreenshoot();
                 const btn = await driver.findElement(By.css('.auth-button'));
                 await btn.click();
                 console.log('sign in clicked');
                 await sleep(2000);
+                await saveScreenshoot();
             }
         });
 
-        try {
-            await driver.findElement(By.name('password'));
-            console.log('Still in sign on screen');
-            await sleep(1000);
-            await driver.findElement(By.name('password')).clear();
-            await driver.findElement(By.name('password')).sendKeys(creds.password);     
-            await saveScreenshoot();
-        } catch { 
-            break;
+        let good = false;
+        for (let i = 0; i < 3; i++) {
+            try {
+                await driver.findElement(By.name('phoneEmailUsername'));
+                await saveScreenshoot();
+                console.log('still on login screen');
+                await sleep(3000);
+                await saveScreenshoot();
+            } catch {
+                good = true;
+            }
+            if (good) break;            
         }
+        if (good) break;
     }
 
     const CheckCode = async () => {
@@ -89,16 +99,17 @@ async function test(creds) {
                 await CheckCode();
                 good = true;
             } catch(e) {
-                console.log('waiting for code step');
+                console.log('Not waiting for code step');
             }
             try {
-                const btn = await driver.findElement(By.id('balance_right_side'));
+                await driver.findElement(By.xpath("//*[text()[contains(.,'Jinlin Xie')]]"));
                 good = true;
             } catch {
                 console.log('not login');
             }
-            if (!good) throw 'bad';
-            return good;
+            if (!good) throw {
+                message:'waiting for code or main screen'
+            };
         }
     });
 
@@ -108,116 +119,31 @@ async function test(creds) {
         action: async () => {
             await saveScreenshoot();
             await sleep(1000);
-            const btn = await driver.findElement(By.id('balance_right_side'));            
+            await driver.findElement(By.xpath("//*[text()[contains(.,'Jinlin Xie')]]"));
         }
     });
     saveCookies();
-    saveScreenshoot();
-    return;
+    //saveScreenshoot();
 
-    if (false) {
-        await waitElement({
-            message: 'close Notification',
-            waitSeconds: 5,
-            action: async () => {
-                await saveScreenshoot();
-                const btn = await driver.findElement(By.css('.vuiLayerCloseButton'));
-                await btn.click();
-            }
-        });
-    }
-
-    let veryCnt = 0;
-    await waitElement({
-        message: 'Code',
-        action: async (msg, ind) => {
-            try {
-                await driver.findElement(By.id('sncTabSetBalanceOverviewTab'));
-                console.log('already 2f');
-                return;
-            } catch (err) {}
-            await driver.findElement(By.id('YES')).click();
-            await saveScreenshoot();
-            const code = await readOneLine('Please input code');
-            await driver.findElement(By.id('code')).sendKeys(code);
-            const loginGrps = await driver.findElements(By.css('.logon-input-group'));
-            await pmap1(loginGrps, async loginGrp => {                            
-                //const debugTxt1 = await loginGrp.getAttribute('innerHTML');
-                //console.log(debugTxt1);
-                //const dbgCss = await loginGrp.findElements(By.css('.vuiButton'));
-                const btns = await loginGrp.findElements(By.css('button'));
-                console.log(btns.length)
-                const btn1 = btns[1];
-                if (btn1) {
-                    const btnTxt = await btn1.getAttribute('innerHTML');
-                    console.log(btnTxt);
-                    await btn1.click();
-                    await saveScreenshoot();
-                }
-            });
-            if (veryCnt === 0) {
-                console.log('test again');
-                veryCnt++;
-                throw {
-                    message: 'test again'
-                }
-            }
-            console.log('test done');
-        }
-    })
+    const statementUrl = `https://venmo.com/account/statement?end=${moment().format('YYYY-MM-DD')}&start=${moment().add(-89,'days').format('YYYY-MM-DD')}`;
+    console.log(statementUrl);
     await saveScreenshoot();
-    
+    driver.get(statementUrl);
+    await sleep(2000);
+    await saveScreenshoot();
     await waitElement({
-        message: 'go to https://personal.vanguard.com/us/Statements',
+        message: 'Wait entrance',
+        waitSeconds: 5,
         action: async () => {
-            await driver.executeScript(`window.location.href = 'https://personal.vanguard.com/us/Statements';`);
-        }
-    });
-    
-
-    await waitElement({
-        message: 'StmtSummaryForm:stmtDataTabletbody0',
-        action: async message => {
             await saveScreenshoot();
-            const statements = await driver.findElement(By.id(message));
-            const eles = await statements.findElements(By.css('tr'));
-            await pmap1(eles, async (ele, linePos) => {
-                let dateStr = '';
-                let fileDesc = '';
-                let href = '';
-                const tds = await ele.findElements(By.css('td'));
-                await pmap1(tds, async (td, ind) => {
-                    const txt = await td.getAttribute('innerHTML');
-                    if (ind === 0) {
-                        dateStr = moment(txt, 'MM/DD/YYYY').format('YYYYMMDD');
-                    } else if (ind === 1) {
-                        fileDesc = txt.replace(/&amp;/g, '_').replace(/ /g, '_');
-                    } else if (ind === 2) {
-                        const aTag = await td.findElement(By.css('a'));
-                        href = await aTag.getAttribute('href')
-                        //console.log(href);                        
-                    }
-                    //https://personal.vanguard.com/us/StmtCnfmViewPDFImage?hsg=n&adobChk=n&year=2020&dateView=n&id=0&rid=897872640000283202010011601592210897875827790&raId=VAN2000&srcInd=RRD&viewing=s&dateCheck=false
-                });
-                if (href) {
-                    const fileName = `van/${dateStr}_${fileDesc}_${linePos}.pdf`;
-                    if (!fs.existsSync(fileName)) {
-                        console.log(`creating ${fileName}`);
-                        await getFileWithCookies(href, fileName);
-                    }
-                }
-            });
+            await sleep(1000);
+            driver.findElement(By.xpath("//*[text()[contains(.,'Completed Transactions')]]"));
         }
     });
-    console.log('done, sleeping');
-    await sleep(1000);
-    //const cookies = await driver.manage().getCookies();
-    //fs.writeFileSync('cookies.json', JSON.stringify());
-
+    console.log('done');
+    await sleep(10000);
     await saveScreenshoot();
-
-    await saveCookies();
-    console.log('cookies saved');
+    
     await driver.quit();
     console.log('all done');
 }
