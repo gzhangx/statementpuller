@@ -9,7 +9,7 @@ const { sleep, waitElement, driver, By, saveScreenshoot,
     saveCookies,
     loadCookies,
 } = require('./lib/util');
-const { findSafariDriver } = require('selenium-webdriver/safari');
+const { promise } = require('selenium-webdriver');
 
 async function test(creds) {
     
@@ -18,6 +18,9 @@ async function test(creds) {
 
     await sleep(1000);
     await saveScreenshoot();
+
+    const loggedInCheck = () => driver.findElement(By.xpath("//*[text()[contains(.,'Jinlin Xie')]]"));
+    while (true) {
     await waitElement({
         message: 'Waiting page startup',
         //const readyState = await driver.executeScript("return document.readyState");        
@@ -29,17 +32,23 @@ async function test(creds) {
         }
     });
     
-    while (true) {
+    
         await waitElement({
             message: 'Waiting sign in button',
             //const readyState = await driver.executeScript("return document.readyState");        
             action: async () => {
-                await sleep(3000);
+                await sleep(1000);
+                try {
+                    await loggedInCheck()
+                    return;
+                } catch { }
                 await saveScreenshoot();
                 const btn = await driver.findElement(By.css('.auth-button'));
+                await sleep(1000);
                 await btn.click();
                 console.log('sign in clicked');
-                await sleep(2000);
+                await sleep(1000);
+                await btn.click();
                 await saveScreenshoot();
             }
         });
@@ -47,8 +56,14 @@ async function test(creds) {
         let good = false;
         for (let i = 0; i < 3; i++) {
             try {
-                await driver.findElement(By.name('phoneEmailUsername'));
+                const uname = await driver.findElement(By.name('phoneEmailUsername'));
+                await uname.click();
                 await saveScreenshoot();
+                await sleep(1000);
+                const pwd = await driver.findElement(By.css('.sign-in'))
+                await pwd.click();
+                await saveScreenshoot();
+                await sleep(1000);
                 console.log('still on login screen');
                 await sleep(3000);
                 await saveScreenshoot();
@@ -102,7 +117,7 @@ async function test(creds) {
                 console.log('Not waiting for code step');
             }
             try {
-                await driver.findElement(By.xpath("//*[text()[contains(.,'Jinlin Xie')]]"));
+                await loggedInCheck()
                 good = true;
             } catch {
                 console.log('not login');
@@ -143,6 +158,40 @@ async function test(creds) {
     console.log('done');
     await sleep(10000);
     await saveScreenshoot();
+
+    const statementItems = await driver.findElements(By.css('.statement-item'));
+    const cleanHtml = str => str.replace(/<!--(.*?)-->/gm, "");
+    await pmap1(statementItems, async itm => {
+        //while (true) {
+        //    const css = await readOneLine('enter data');
+        //    console.log(css);
+        //    const found = await itm.findElements(By.css(css));
+        //    await pmap1(found, async f => {
+        //        console.log(await f.getAttribute('innerHTML')); 
+        //    });        
+        //}
+        const date = await itm.findElement(By.css('.item-date > a > span')).getAttribute('innerHTML');
+        console.log(date);
+        try {
+            const title = await itm.findElement(By.css('.item-title > span')).getAttribute('innerHTML');
+            console.log(title);
+            const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
+            console.log(' titleType1=>'+ names[1] + ',' + cleanHtml(names[2])+' ' + name[3]);
+        } catch {
+            const title = await itm.findElement(By.css('.item-title')).getAttribute('innerHTML');
+            console.log(' titleType2=>' +cleanHtml(title));
+        }
+        try {
+            const subtitle = await itm.findElement(By.css('.item-subtitle > span')).getAttribute('innerHTML');
+            console.log('subtitle1=>'+subtitle)
+        } catch {
+            const subtitle = await itm.findElement(By.css('.item-subtitle')).getAttribute('innerHTML');
+            console.log('subtitle2=>'+cleanHtml(subtitle))
+        }
+        const amountStr = await itm.findElement(By.css('.item-delta-text')).getAttribute('innerHTML');
+        console.log('amt'+cleanHtml(amountStr));
+        return itm;
+    });
     
     await driver.quit();
     console.log('all done');
