@@ -176,7 +176,7 @@ async function test(creds) {
             const title = await itm.findElement(By.css('.item-title > span')).getAttribute('innerHTML');
             console.log(title);
             const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
-            console.log(' titleType1=>'+ names[1] + ',' + cleanHtml(names[2])+' ' + name[3]);
+            console.log(' titleType1=>'+ names[1] + ',' + cleanHtml(names[2])+' ' + names[3]);
         } catch {
             const title = await itm.findElement(By.css('.item-title')).getAttribute('innerHTML');
             console.log(' titleType2=>' +cleanHtml(title));
