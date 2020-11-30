@@ -56,7 +56,7 @@ async function test(creds) {
     const CheckCode = async () => {
         await sleep(1000);
         await saveScreenshoot();
-        const sendCode = await pupp.findBySelector('.mfa-button-code-prompt');
+        const sendCode = await pupp.findByCSS('.mfa-button-code-prompt');
         await saveScreenshoot();
         console.log('Need code');
         await sleep(1000);
@@ -66,10 +66,10 @@ async function test(creds) {
             message: 'WaitSendCode',
             waitSeconds: 5,
             action: async () => {
-                const codeField = await pupp.findBySelector('.auth-form-input');
+                const codeField = await pupp.findByCSS('.auth-form-input');
                 const code = await readOneLine('Please input code');
                 pupp.setText('.auth-form-input', code);
-                let btn = await pupp.findBySelector('.auth-button');
+                let btn = await pupp.findByCSS('.auth-button');
                 await sleep(1000);
                 btn.click();
                 await sleep(3000);
@@ -77,8 +77,8 @@ async function test(creds) {
                 //document.querySelector("#content > div > div > div > form > div > button.ladda-button.auth-button")
                 ////*[@id="content"]/div/div/div/form/div/button[1]
                 //#content > div > div > div > form > div > button.ladda-button.auth-button
-                //const NoRemember = await pupp.findBySelector('.mfa-button-do-not-remember');
-                btn = await pupp.findBySelector('button.ladda-button.auth-button');
+                //const NoRemember = await pupp.findByCSS('.mfa-button-do-not-remember');
+                btn = await pupp.findByCSS('button.ladda-button.auth-button');
                 btn.click();
                 await sleep(3000);
             }
@@ -118,7 +118,7 @@ async function test(creds) {
 
 
     //step2
-    const statementUrl = `https://venmo.com/account/statement?end=${moment().format('YYYY-MM-DD')}&start=${moment().add(-59, 'days').format('YYYY-MM-DD')}`;
+    const statementUrl = `https://venmo.com/account/statement?end=${moment().format('MM-DD-YYYY')}&start=${moment().add(-59, 'days').format('MM-DD-YYYY')}`;
     console.log(statementUrl);
     await saveScreenshoot();
     pupp.goto(statementUrl);
@@ -163,13 +163,26 @@ async function getStatements(pupp) {
         const titles = [];
         let subTitle;
         try {
+            // while (true) {
+            //     const css = await readOneLine('enter css');
+            //     console.log(css);
+            //     try {
+            //         const title = await pupp.getElementText(itm, css);
+            //         console.log(title);
+            //         const stitle = await pupp.getElementText(itm, '.item-title > span');
+            //         console.log(stitle);
+            //     } catch (e) {
+            //         console.log(e);
+            //     }
+            // }
+            await pupp.getElementText(itm, '.item-title');
             const title = await pupp.getElementText(itm, '.item-title > span');
             console.log(title);
             const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
             titles = names.slice();
             console.log(' titleType1=>' + names[1] + ',' + cleanHtml(names[2]) + ', ' + names[3]);
-        } catch {
-            console.log('debug title for span failed');
+        } catch(e) {
+            console.log('debug title for span failed ' + e.message);
             const title = await pupp.getElementText(itm, '.item-title');
             titles[0] = cleanHtml(title);
             console.log(' titleType2=>' + titles[0]);
