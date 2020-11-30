@@ -10,12 +10,9 @@ const { sleep, waitElement,
 } = require('./lib/util');
 
 const { createPuppeteer } = require('./lib/chromPupp');
-
+const envCfg = require('./lib/env');
 async function test(creds) {
-    const pupp = await createPuppeteer({
-        headless: false,
-        slowMo: 250 // slow down by 250ms
-    });
+    const pupp = await createPuppeteer(envCfg.getCfg());
     const saveScreenshoot = () => pupp.screenshot('outputData/test.png');
     await pupp.goto("https://www.paypal.com/us/signin");
 
