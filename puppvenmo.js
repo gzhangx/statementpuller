@@ -16,13 +16,12 @@ async function test(creds) {
     
     //const cookies = JSON.parse(fs.readFileSync('outputData/chrcookies.json'));
     //pupp.page.setCookie(cookies);    
-        
     await pupp.goto('https://venmo.com/account/sign-in'); //creds.url
     await pupp.loadCookies();
-    console.log('opened');
     let tryNum = 0;
     while (true) {
-        try {
+        try {            
+            console.log('opened');
             //(await pupp.$('a.sign-in.active')).click();
             await sleep(1000);
             console.log('went to active, gong user try ' + tryNum  );
@@ -31,10 +30,18 @@ async function test(creds) {
             await pupp.setTextByName('password', creds.password);            
             const btn = await pupp.$('.auth-button');
             console.log('auth clock');
-            await sleep(4500);
+            await sleep(1500);
             await btn.click();
-            console.log('auth clicked');
+            await sleep(1500);
+            if (tryNum >1 ) {
+                tryNum = 0;
+                console.log('retry auth');
+                await pupp.goto('https://venmo.com/account/sign-in'); //creds.url
+            } else {
+                console.log('auth clicked');
+            }
         } catch {
+            
             console.log('done, breaking')
             break;
         }
@@ -106,7 +113,7 @@ async function test(creds) {
     //const cookies = await pupp.page.cookies();
     //await fs.writeFile('outputData/test.png', JSON.stringify(cookies, null, 2));
     await pupp.saveCookies();
-    await sleep(10000);
+    //await sleep(10000);
 
 
 
@@ -129,7 +136,8 @@ async function test(creds) {
     });
 
 
-    await getStatements(pupp);
+    const transfers = await getStatements(pupp);
+    console.log(transfers);
 
     console.log('done');
     await sleep(10000);
@@ -141,7 +149,7 @@ async function test(creds) {
 async function getStatements(pupp) {
     const cleanHtml = str => str.replace(/<!--(.*?)-->/gm, "");;
     const statementItems = await pupp.findAllByCss('.statement-item');
-    await pmap1(statementItems, async itm => {
+    return await pmap1(statementItems, async itm => {
         //while (true) {
         //    const css = await readOneLine('enter data');
         //    console.log(css);
@@ -152,25 +160,37 @@ async function getStatements(pupp) {
         //}
         const date = await pupp.getElementText(itm, '.item-date > a > span');
         console.log(date);
+        const titles = [];
+        let subTitle;
         try {
             const title = await pupp.getElementText(itm, '.item-title > span');
             console.log(title);
             const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
-            console.log(' titleType1=>' + names[1] + ',' + cleanHtml(names[2]) + ' ' + names[3]);
+            titles = names.slice();
+            console.log(' titleType1=>' + names[1] + ',' + cleanHtml(names[2]) + ', ' + names[3]);
         } catch {
+            console.log('debug title for span failed');
             const title = await pupp.getElementText(itm, '.item-title');
-            console.log(' titleType2=>' + cleanHtml(title));
+            titles[0] = cleanHtml(title);
+            console.log(' titleType2=>' + titles[0]);
         }
         try {
-            const subtitle = await pupp.getElementText(itm, '.item-subtitle > span');
-            console.log('subtitle1=>' + subtitle)
+            subTitle = await pupp.getElementText(itm, '.item-subtitle > span');
+            console.log('subtitle1=>' + subTitle)
         } catch {
             const subtitle = await pupp.getElementText(itm, '.item-subtitle');
-            console.log('subtitle2=>' + cleanHtml(subtitle))
+            subTitle = cleanHtml(subtitle);            
+            console.log('subtitle2=>' + subTitle);
         }
         const amountStr = await pupp.getElementText(itm, '.item-delta-text');
-        console.log('amt' + cleanHtml(amountStr));
-        return itm;
+        const amount = cleanHtml(amountStr).replace('/,/g','').replace(/[$]/g,'');
+        console.log('amt' + amount);
+        return {
+            date,
+            titles,
+            subTitle,
+            amount,
+        };
     });
 }
 test(creds.venmo).catch(err => {
