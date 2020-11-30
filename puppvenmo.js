@@ -3,6 +3,7 @@ const { createPuppeteer } = require('./lib/chromPupp');
 const { sleep,
     waitElement,
     readOneLine,
+    pmap1,
 } = require('./lib/util');
 const moment = require('moment');
 const creds = require('./creds.json');
@@ -110,7 +111,7 @@ async function test(creds) {
 
 
     //step2
-    const statementUrl = `https://venmo.com/account/statement?end=${moment().format('YYYY-MM-DD')}&start=${moment().add(-89, 'days').format('YYYY-MM-DD')}`;
+    const statementUrl = `https://venmo.com/account/statement?end=${moment().format('YYYY-MM-DD')}&start=${moment().add(-59, 'days').format('YYYY-MM-DD')}`;
     console.log(statementUrl);
     await saveScreenshoot();
     pupp.goto(statementUrl);
@@ -128,6 +129,8 @@ async function test(creds) {
     });
 
 
+    await getStatements(pupp);
+
     console.log('done');
     await sleep(10000);
     await saveScreenshoot();
@@ -135,6 +138,41 @@ async function test(creds) {
     await pupp.close();
 }
 
+async function getStatements(pupp) {
+    const cleanHtml = str => str.replace(/<!--(.*?)-->/gm, "");;
+    const statementItems = await pupp.findAllByCss('.statement-item');
+    await pmap1(statementItems, async itm => {
+        //while (true) {
+        //    const css = await readOneLine('enter data');
+        //    console.log(css);
+        //    const found = await itm.findElements(By.css(css));
+        //    await pmap1(found, async f => {
+        //        console.log(await f.getAttribute('innerHTML')); 
+        //    });        
+        //}
+        const date = await pupp.getElementText(itm, '.item-date > a > span');
+        console.log(date);
+        try {
+            const title = await pupp.getElementText(itm, '.item-title > span');
+            console.log(title);
+            const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
+            console.log(' titleType1=>' + names[1] + ',' + cleanHtml(names[2]) + ' ' + names[3]);
+        } catch {
+            const title = await pupp.getElementText(itm, '.item-title');
+            console.log(' titleType2=>' + cleanHtml(title));
+        }
+        try {
+            const subtitle = await pupp.getElementText(itm, '.item-subtitle > span');
+            console.log('subtitle1=>' + subtitle)
+        } catch {
+            const subtitle = await pupp.getElementText(itm, '.item-subtitle');
+            console.log('subtitle2=>' + cleanHtml(subtitle))
+        }
+        const amountStr = await pupp.getElementText(itm, '.item-delta-text');
+        console.log('amt' + cleanHtml(amountStr));
+        return itm;
+    });
+}
 test(creds.venmo).catch(err => {
     console.log(err);
 })
