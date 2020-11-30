@@ -4,9 +4,7 @@ const Promise = require('bluebird');
 const fs = require('fs');
 const submit = require('./lib/submit');
 //const https = require('https');
-const { sleep, waitElement,
-    saveCookies,
-    loadCookies,
+const { sleep, waitElement    
 } = require('./lib/util');
 
 const { createPuppeteer } = require('./lib/chromPupp');
@@ -77,9 +75,6 @@ async function test(creds) {
         }
     });
     await saveScreenshoot();
-    await saveCookies();
-    console.log('cookies saved');
-
 
     const containers = await pupp.findAllByCss('.transactionDescriptionContainer');
     console.log(`containers=${containers.length}`);
