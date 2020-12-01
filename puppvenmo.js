@@ -147,7 +147,19 @@ async function test(creds) {
 }
 
 async function getStatements(pupp) {
-    const cleanHtml = str => str.replace(/<!--(.*?)-->/gm, "");;
+    const cleanHtml = str => str.replace(/<!--(.*?)-->/gm, "");
+    const cleanSpan = str => str.replace(/<[/]{0,1}span(.*?)>/gm, '');
+
+    const recTryTxt = async (itm, css) => {
+        for (let i = 0; i < 3; i++) {
+            try {
+                return await pupp.getElementText(itm, css);
+            } catch (e) {
+                if (i === 2) throw e;
+                console.log(`Retrying ${i} for ${css}`);
+            }
+        }
+    }
     const statementItems = await pupp.findAllByCss('.statement-item');
     return await pmap1(statementItems, async itm => {
         //while (true) {
@@ -160,26 +172,27 @@ async function getStatements(pupp) {
         //}
         const date = await pupp.getElementText(itm, '.item-date > a > span');
         console.log(date);
-        const titles = [];
+        let titles = [];
         let subTitle;
         try {
-            // while (true) {
+            // for (let i = 0; i < 3; i++) {
             //     const css = await readOneLine('enter css');
             //     console.log(css);
             //     try {
-            //         const title = await pupp.getElementText(itm, css);
-            //         console.log(title);
+            //         const title2 = await pupp.getElementText(itm, css);
+            //         console.log(title2);
             //         const stitle = await pupp.getElementText(itm, '.item-title > span');
             //         console.log(stitle);
             //     } catch (e) {
             //         console.log(e);
             //     }
             // }
-            await pupp.getElementText(itm, '.item-title');
-            const title = await pupp.getElementText(itm, '.item-title > span');
+            //const ttt = await pupp.getElementText(itm, '.item-title');
+            //console.log(`ttt= ${ttt}`);
+            const title = await recTryTxt(itm, '.item-title > span');
             console.log(title);
             const names = title.match(/<span.*>(.+)?<\/span>(.*)<span.*>(.+)?<\/span>/);
-            titles = names.slice();
+            titles = names.slice(1).map(cleanHtml);
             console.log(' titleType1=>' + names[1] + ',' + cleanHtml(names[2]) + ', ' + names[3]);
         } catch(e) {
             console.log('debug title for span failed ' + e.message);
@@ -188,8 +201,9 @@ async function getStatements(pupp) {
             console.log(' titleType2=>' + titles[0]);
         }
         try {
-            subTitle = await pupp.getElementText(itm, '.item-subtitle > span');
-            console.log('subtitle1=>' + subTitle)
+            subTitle = await recTryTxt(itm, '.item-subtitle > span');            
+            subTitle = cleanSpan(subTitle);
+            console.log('subtitle1=>' + subTitle);
         } catch {
             const subtitle = await pupp.getElementText(itm, '.item-subtitle');
             subTitle = cleanHtml(subtitle);            
