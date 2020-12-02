@@ -18,6 +18,7 @@
   "homepage": "https://github.com/gzhangx/statementpuller#readme",
   "dependencies": {
     "bluebird": "^3.7.2",
+    "googleapis": "^65.0.0",
     "moment": "^2.29.1",
     "puppeteer": "^5.5.0",
     "superagent": "^6.1.0"
