@@ -5,7 +5,7 @@ const fs = require('fs');
 const submit = require('./lib/submit');
 const processor = require('./processors/puppvenmo');
 
-//return submitTest();
+return submitTest();
 
 processor.process(creds.venmo).then(async trans => {
     fs.writeFileSync('outputData/venmo.json', JSON.stringify(trans, null, 2));
@@ -19,5 +19,5 @@ processor.process(creds.venmo).then(async trans => {
 
 function submitTest() {
     const datas = JSON.parse(fs.readFileSync('outputData/venmo.json'));
-    return submit.submit(datas,'localhost:8081');
+    return submit.submit(datas);
 }
