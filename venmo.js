@@ -19,5 +19,5 @@ processor.process(creds.venmo).then(async trans => {
 
 function submitTest() {
     const datas = JSON.parse(fs.readFileSync('outputData/venmo.json'));
-    return submit.submit(datas);
+    return submit.submit(datas,'localhost:8081');
 }
